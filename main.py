@@ -53,7 +53,7 @@ def getHTML():
 
 
 def sendToSheets(job_url, job_title, job_company, job_location, job_salary):
-    print('Sending info to your google sheet...\n')
+    print('Sending info to your google sheet...\n') # via Sheety API (see https://sheety.co/)
 
     sheety_auth_token = os.getenv('SHEETY_AUTH_TOKEN')
     # sheety_get_endpoint = os.getenv('SHEETY_GET_ENDPOINT')
