@@ -39,7 +39,7 @@ def main():
 
 def getHTML():
     # Get the job posting URL from the user
-    URL = input("Please enter job posting URL from LinkedIn.\n(i.e. https://www.linkedin.com/jobs/view/4289526094):\n\n")
+    URL = input("Please enter job posting URL from LinkedIn.\n(i.e. https://www.linkedin.com/jobs/view/4296307551):\n\n")
     print("\nGetting html...\n")
 
     response = requests.get(URL)
