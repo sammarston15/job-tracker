@@ -1,9 +1,14 @@
 import os
+import time
+import logging
 from dotenv import load_dotenv
 import requests
 from datetime import datetime
 import pytz
 from bs4 import BeautifulSoup
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -59,9 +64,10 @@ def sendToSheets(job_url, job_title, job_company, job_location, job_salary):
     # sheety_get_endpoint = os.getenv('SHEETY_GET_ENDPOINT')
     sheety_post_endpoint = os.getenv('SHEETY_POST_ENDPOINT')
     now = datetime.now(pytz.timezone('America/Phoenix')).strftime("%m/%d/%y")
+    sheety_sheet_name = os.getenv('SHEETY_SHEET_NAME')
 
     sheety_params = {
-        "jobsAppliedForIn2025": {
+        f"{sheety_sheet_name}": {
             "company": job_company,
             "jobTitle": job_title,
             "dateApplied": now,
@@ -78,14 +84,39 @@ def sendToSheets(job_url, job_title, job_company, job_location, job_salary):
         "Content-Type": "application/json"
     }
 
-    sheety_response = requests.post(
-        sheety_post_endpoint, 
-        json=sheety_params, 
-        headers=sheety_headers
-    )
-
-    if sheety_response.status_code == 200 or sheety_response.status_code == 201:
-        print("Info sent successfully!\n")
+    max_attempts = 2  # initial request + one retry
+    for attempt in range(max_attempts):
+        try:
+            sheety_response = requests.post(
+                sheety_post_endpoint,
+                json=sheety_params,
+                headers=sheety_headers,
+                timeout=30,
+            )
+            if sheety_response.status_code in (200, 201):
+                print("Info sent successfully!\n")
+                return
+            # Request succeeded but API returned an error status
+            logger.warning(
+                "Sheety request failed (attempt %d/%d): status=%s, url=%s, response=%s",
+                attempt + 1,
+                max_attempts,
+                sheety_response.status_code,
+                sheety_post_endpoint,
+                sheety_response.text[:500] if sheety_response.text else "(empty)",
+            )
+        except requests.RequestException as e:
+            logger.warning(
+                "Sheety request failed (attempt %d/%d): %s",
+                attempt + 1,
+                max_attempts,
+                e,
+                exc_info=True,
+            )
+        if attempt == 0:
+            print("Retrying in 5 seconds...\n")
+            time.sleep(5)
+    print("Failed to send info to Google Sheet after 2 attempts.\n")
 
 
 if __name__ == "__main__":
